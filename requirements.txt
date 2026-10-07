@@ -1,0 +1,7 @@
+tensorflow>=2.16
+numpy>=1.24
+Pillow>=10.0
+kagglehub>=0.3
+flask>=3.0
+flask-cors>=4.0
+matplotlib>=3.7

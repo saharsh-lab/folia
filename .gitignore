@@ -1,0 +1,23 @@
+# Secrets — never commit
+kaggle.json
+.env
+
+# Dataset (download with `python train.py --download`)
+plantvillagedataset/
+plantvillage-dataset/
+
+# Old grayscale model (182 MB, over GitHub's 100 MB file limit)
+*.h5
+
+# Python / Jupyter
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+.venv/
+venv/
+
+# OS / editor
+.DS_Store
+.vscode/
+.idea/
+train.log
