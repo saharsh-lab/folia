@@ -3,644 +3,406 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>PlantMD – AI Plant Disease Detector</title>
-  <meta name="description" content="Upload a leaf photo and get instant AI-powered plant disease diagnosis with treatment recommendations." />
+  <title>Folia — Plant Disease Detection</title>
+  <meta name="description" content="Folia identifies 38 plant diseases and healthy states across 14 crops from a single leaf photo, with confidence scores, causes and treatment guidance." />
+  <meta name="theme-color" content="#1F3D2B" />
+  <link rel="icon" type="image/svg+xml" href="/static/img/folia-mark.svg" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
-  <style>
-    /* ── Reset & tokens ─────────────────────────────────────── */
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-    :root {
-      --bg:        #080f0a;
-      --surface:   #0f1a12;
-      --card:      #152019;
-      --border:    #1e3024;
-      --green:     #22c55e;
-      --green-dim: #16a34a;
-      --green-glow:#22c55e33;
-      --teal:      #2dd4bf;
-      --yellow:    #facc15;
-      --red:       #f87171;
-      --orange:    #fb923c;
-      --text:      #e2e8f0;
-      --muted:     #64748b;
-      --radius:    16px;
-      --trans:     .25s cubic-bezier(.4,0,.2,1);
-    }
-
-    html { scroll-behavior: smooth; }
-
-    body {
-      font-family: 'Inter', system-ui, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
-      overflow-x: hidden;
-    }
-
-    /* ── Animated mesh background ───────────────────────────── */
-    body::before {
-      content: '';
-      position: fixed; inset: 0; z-index: 0;
-      background:
-        radial-gradient(ellipse 80% 60% at 20% 0%,   #0d2f1a 0%, transparent 60%),
-        radial-gradient(ellipse 60% 40% at 80% 100%, #0a1f2e 0%, transparent 60%);
-      pointer-events: none;
-    }
-
-    /* ── Header ─────────────────────────────────────────────── */
-    header {
-      position: relative; z-index: 10;
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 1.25rem 2.5rem;
-      border-bottom: 1px solid var(--border);
-      background: rgba(8,15,10,.7);
-      backdrop-filter: blur(20px);
-    }
-
-    .logo {
-      display: flex; align-items: center; gap: .6rem;
-      font-size: 1.35rem; font-weight: 800; letter-spacing: -.5px;
-      color: var(--text);
-    }
-    .logo-icon {
-      width: 36px; height: 36px;
-      background: linear-gradient(135deg, var(--green), var(--teal));
-      border-radius: 10px;
-      display: grid; place-items: center;
-      font-size: 1.1rem;
-    }
-    .logo span { color: var(--green); }
-
-    .badge {
-      font-size: .7rem; font-weight: 600;
-      background: var(--green-glow);
-      color: var(--green);
-      border: 1px solid var(--green);
-      border-radius: 20px;
-      padding: .2rem .7rem;
-      letter-spacing: .5px;
-      text-transform: uppercase;
-    }
-
-    /* ── Hero ───────────────────────────────────────────────── */
-    .hero {
-      position: relative; z-index: 1;
-      text-align: center;
-      padding: 4rem 1.5rem 2.5rem;
-    }
-    .hero h1 {
-      font-size: clamp(2rem, 5vw, 3.5rem);
-      font-weight: 800; line-height: 1.1;
-      letter-spacing: -1.5px;
-      background: linear-gradient(135deg, #fff 30%, var(--green) 100%);
-      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-      background-clip: text;
-      margin-bottom: 1rem;
-    }
-    .hero p {
-      font-size: 1.1rem; color: var(--muted);
-      max-width: 520px; margin: 0 auto 2rem;
-      line-height: 1.7;
-    }
-    .stats-row {
-      display: flex; justify-content: center; gap: 2.5rem;
-      flex-wrap: wrap; margin-bottom: 2.5rem;
-    }
-    .stat { text-align: center; }
-    .stat strong { display: block; font-size: 1.5rem; font-weight: 800; color: var(--green); }
-    .stat small { font-size: .75rem; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; }
-
-    /* ── Main card ──────────────────────────────────────────── */
-    .container {
-      position: relative; z-index: 1;
-      max-width: 1100px; margin: 0 auto;
-      padding: 0 1.5rem 4rem;
-    }
-
-    .main-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 1.5rem;
-    }
-    @media (max-width: 768px) { .main-grid { grid-template-columns: 1fr; } }
-
-    .panel {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 1.75rem;
-      transition: border-color var(--trans);
-    }
-    .panel:hover { border-color: #2a4030; }
-    .panel-title {
-      font-size: .75rem; font-weight: 700;
-      text-transform: uppercase; letter-spacing: 1px;
-      color: var(--green); margin-bottom: 1.25rem;
-    }
-
-    /* ── Upload zone ────────────────────────────────────────── */
-    #drop-zone {
-      border: 2px dashed var(--border);
-      border-radius: 12px;
-      min-height: 280px;
-      display: flex; flex-direction: column;
-      align-items: center; justify-content: center;
-      gap: .75rem; cursor: pointer;
-      transition: all var(--trans);
-      position: relative; overflow: hidden;
-    }
-    #drop-zone:hover, #drop-zone.drag-over {
-      border-color: var(--green);
-      background: var(--green-glow);
-    }
-    #drop-zone.has-image { border-style: solid; border-color: var(--green); }
-
-    #preview {
-      width: 100%; height: 100%; object-fit: cover;
-      border-radius: 10px;
-      display: none;
-      position: absolute; inset: 0;
-    }
-    #drop-zone.has-image #preview { display: block; }
-    #drop-zone.has-image .upload-placeholder { display: none; }
-
-    .upload-placeholder {
-      display: flex; flex-direction: column; align-items: center; gap: .5rem;
-    }
-    .upload-icon {
-      width: 64px; height: 64px;
-      background: linear-gradient(135deg, var(--green-glow), transparent);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      display: grid; place-items: center;
-      font-size: 1.75rem;
-      transition: transform var(--trans);
-    }
-    #drop-zone:hover .upload-icon { transform: translateY(-4px); }
-    .upload-label { font-size: .95rem; color: var(--text); font-weight: 500; }
-    .upload-sub { font-size: .78rem; color: var(--muted); }
-
-    #file-input { display: none; }
-
-    /* image overlay overlay */
-    .image-overlay {
-      position: absolute; inset: 0;
-      background: linear-gradient(to top, rgba(0,0,0,.7) 0%, transparent 50%);
-      border-radius: 10px;
-      display: none;
-      align-items: flex-end;
-      padding: .75rem 1rem;
-    }
-    #drop-zone.has-image .image-overlay { display: flex; }
-    .image-overlay span { font-size: .8rem; color: #fff; font-weight: 500; }
-
-    .btn {
-      display: inline-flex; align-items: center; gap: .5rem;
-      padding: .75rem 1.75rem;
-      border-radius: 10px; border: none; cursor: pointer;
-      font-family: inherit; font-size: .95rem; font-weight: 600;
-      transition: all var(--trans);
-    }
-    .btn-primary {
-      background: linear-gradient(135deg, var(--green), var(--green-dim));
-      color: #fff;
-      box-shadow: 0 0 24px var(--green-glow);
-      width: 100%; justify-content: center; margin-top: 1rem;
-    }
-    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 0 36px #22c55e55; }
-    .btn-primary:active { transform: translateY(0); }
-    .btn-primary:disabled { opacity: .5; cursor: not-allowed; transform: none; }
-    .btn-outline {
-      background: transparent; color: var(--muted);
-      border: 1px solid var(--border);
-      font-size: .85rem; padding: .5rem 1rem;
-      margin-top: .5rem; width: 100%; justify-content: center;
-    }
-    .btn-outline:hover { border-color: var(--green); color: var(--green); }
-
-    /* ── Spinner ────────────────────────────────────────────── */
-    .spinner {
-      width: 18px; height: 18px;
-      border: 2px solid rgba(255,255,255,.3);
-      border-top-color: #fff;
-      border-radius: 50%;
-      animation: spin .7s linear infinite;
-      display: none;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
-
-    /* ── Result panel ───────────────────────────────────────── */
-    #result-panel { display: none; }
-    #result-panel.visible { display: block; }
-
-    .result-header {
-      display: flex; align-items: center; gap: 1rem;
-      margin-bottom: 1.5rem;
-    }
-    .result-icon {
-      width: 52px; height: 52px; border-radius: 14px;
-      display: grid; place-items: center;
-      font-size: 1.5rem; flex-shrink: 0;
-    }
-    .icon-healthy  { background: #052a12; border: 1px solid var(--green); }
-    .icon-diseased { background: #2a1205; border: 1px solid var(--orange); }
-    .icon-critical { background: #2a0505; border: 1px solid var(--red);    }
-
-    .result-title { font-size: 1.2rem; font-weight: 700; }
-    .result-sub   { font-size: .82rem; color: var(--muted); margin-top: .2rem; }
-
-    /* confidence bar */
-    .conf-wrap { margin-bottom: 1.25rem; }
-    .conf-label {
-      display: flex; justify-content: space-between;
-      font-size: .8rem; color: var(--muted); margin-bottom: .4rem;
-    }
-    .conf-label strong { color: var(--text); }
-    .conf-bar {
-      height: 8px; background: var(--border); border-radius: 99px; overflow: hidden;
-    }
-    .conf-fill {
-      height: 100%; border-radius: 99px;
-      background: linear-gradient(90deg, var(--green), var(--teal));
-      width: 0; transition: width 1s cubic-bezier(.4,0,.2,1);
-    }
-
-    /* severity chip */
-    .chip {
-      display: inline-flex; align-items: center; gap: .35rem;
-      padding: .3rem .85rem; border-radius: 99px;
-      font-size: .75rem; font-weight: 700;
-      text-transform: uppercase; letter-spacing: .5px;
-      margin-bottom: 1.25rem;
-    }
-    .chip-none     { background: #052a12; color: var(--green); border: 1px solid var(--green); }
-    .chip-moderate { background: #1f1a05; color: var(--yellow); border: 1px solid var(--yellow); }
-    .chip-high     { background: #1f0d05; color: var(--orange); border: 1px solid var(--orange); }
-    .chip-critical { background: #1f0505; color: var(--red);    border: 1px solid var(--red);    }
-
-    .info-block { margin-bottom: 1.25rem; }
-    .info-block h4 {
-      font-size: .75rem; font-weight: 600; color: var(--green);
-      text-transform: uppercase; letter-spacing: .8px;
-      margin-bottom: .45rem;
-    }
-    .info-block p { font-size: .88rem; color: var(--muted); line-height: 1.65; }
-
-    /* top-5 */
-    .top5-list { list-style: none; display: flex; flex-direction: column; gap: .5rem; }
-    .top5-item {
-      display: flex; align-items: center; gap: .75rem;
-      font-size: .82rem;
-    }
-    .top5-name { flex: 1; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .top5-pct  { color: var(--muted); width: 42px; text-align: right; flex-shrink: 0; }
-    .top5-bar-wrap { width: 80px; height: 5px; background: var(--border); border-radius: 99px; flex-shrink: 0; }
-    .top5-bar { height: 100%; border-radius: 99px; background: var(--green-dim); transition: width .8s ease; }
-
-    /* placeholder hint */
-    .hint-box {
-      border: 1px dashed var(--border); border-radius: 12px;
-      padding: 2rem; text-align: center; color: var(--muted); font-size: .88rem;
-      line-height: 1.7;
-    }
-    .hint-icon { font-size: 2.5rem; margin-bottom: .75rem; display: block; }
-
-    /* demo badge */
-    .demo-note {
-      background: #1a1505; border: 1px solid var(--yellow);
-      color: var(--yellow); border-radius: 10px;
-      padding: .6rem 1rem; font-size: .78rem;
-      margin-bottom: 1rem; display: none;
-    }
-    .demo-note.visible { display: block; }
-
-    /* ── How it works ───────────────────────────────────────── */
-    .how-section { margin-top: 3rem; }
-    .how-section h2 {
-      text-align: center; font-size: 1.5rem; font-weight: 700;
-      margin-bottom: 2rem;
-    }
-    .steps {
-      display: grid; grid-template-columns: repeat(3, 1fr);
-      gap: 1rem;
-    }
-    @media (max-width: 640px) { .steps { grid-template-columns: 1fr; } }
-    .step {
-      background: var(--card); border: 1px solid var(--border);
-      border-radius: var(--radius); padding: 1.5rem;
-      text-align: center;
-    }
-    .step-num {
-      width: 40px; height: 40px;
-      background: linear-gradient(135deg, var(--green), var(--teal));
-      border-radius: 10px; margin: 0 auto .9rem;
-      display: grid; place-items: center;
-      font-size: 1.1rem; font-weight: 800;
-    }
-    .step h3 { font-size: .95rem; font-weight: 700; margin-bottom: .4rem; }
-    .step p  { font-size: .8rem; color: var(--muted); line-height: 1.6; }
-
-    /* ── Footer ─────────────────────────────────────────────── */
-    footer {
-      position: relative; z-index: 1;
-      text-align: center; padding: 1.5rem;
-      border-top: 1px solid var(--border);
-      font-size: .78rem; color: var(--muted);
-    }
-
-    /* ── Animations ─────────────────────────────────────────── */
-    @keyframes fadeUp {
-      from { opacity: 0; transform: translateY(20px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
-    .fade-up { animation: fadeUp .5s ease both; }
-  </style>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400;1,9..144,500&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/static/css/folia.css" />
+  <script>
+    // Apply the saved theme before first paint to avoid a flash.
+    try { const t = localStorage.getItem('folia-theme'); if (t) document.documentElement.dataset.theme = t; } catch (e) {}
+    document.documentElement.classList.add('js');
+  </script>
 </head>
 <body>
+<a class="skip-link" href="#diagnose">Skip to diagnosis</a>
 
-<!-- ── Header ──────────────────────────────────────────────── -->
-<header>
-  <div class="logo">
-    <div class="logo-icon">🌿</div>
-    Plant<span>MD</span>
+<!-- ── Navigation ─────────────────────────────────────────────── -->
+<header class="nav" id="nav">
+  <div class="nav-inner">
+    <a class="brand" href="#top" aria-label="Folia home">
+      <img src="/static/img/folia-mark.svg" alt="" width="34" height="34" />
+      <span class="brand-word">Folia</span>
+    </a>
+    <nav aria-label="Primary">
+      <ul class="nav-links">
+        <li><a href="#diagnose">Diagnose</a></li>
+        <li><a href="#model">Model</a></li>
+        <li><a href="#crops">Crops</a></li>
+        <li><a href="#method">Method</a></li>
+      </ul>
+    </nav>
+    <div class="nav-actions">
+      <button class="icon-btn" id="theme-toggle" type="button" aria-label="Switch to dark theme">
+        <svg class="i-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z"/></svg>
+        <svg class="i-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+      </button>
+      <a class="btn btn-primary btn-sm" href="#diagnose">Diagnose a leaf</a>
+    </div>
   </div>
-  <div class="badge">AI Powered</div>
 </header>
 
-<!-- ── Hero ────────────────────────────────────────────────── -->
-<section class="hero fade-up">
-  <h1>Diagnose Plant Diseases<br>with AI</h1>
-  <p>Upload a leaf photo and get an instant diagnosis across 38 plant disease categories powered by deep learning.</p>
-  <div class="stats-row">
-    <div class="stat"><strong>38</strong><small>Disease Classes</small></div>
-    <div class="stat"><strong>80%+</strong><small>Accuracy</small></div>
-    <div class="stat"><strong>54K+</strong><small>Images Trained</small></div>
-  </div>
-</section>
+<main id="top">
 
-<!-- ── Main ─────────────────────────────────────────────────── -->
-<main class="container">
-  <div class="main-grid">
-
-    <!-- Left: upload -->
-    <div class="panel fade-up" style="animation-delay:.1s">
-      <p class="panel-title">📤 Upload Leaf Image</p>
-
-      <div id="drop-zone">
-        <img id="preview" alt="preview" />
-        <div class="image-overlay">
-          <span id="file-name">image.jpg</span>
-        </div>
-        <div class="upload-placeholder">
-          <div class="upload-icon">🍃</div>
-          <p class="upload-label">Drag & drop or click to upload</p>
-          <p class="upload-sub">JPG, PNG, WEBP · max 10 MB</p>
-        </div>
-      </div>
-      <input type="file" id="file-input" accept="image/*" />
-
-      <button class="btn btn-outline" id="clear-btn" style="display:none" onclick="clearImage()">✕ Remove image</button>
-      <button class="btn btn-primary" id="predict-btn" onclick="predict()" disabled>
-        <span class="spinner" id="spinner"></span>
-        <span id="btn-text">🔍 Analyse Plant</span>
-      </button>
+  <!-- ── Hero ─────────────────────────────────────────────────── -->
+  <section class="hero" aria-labelledby="hero-title">
+    <div class="drift" aria-hidden="true">
+      <span class="drift-leaf d1"></span><span class="drift-leaf d2"></span>
+      <span class="drift-leaf d3"></span><span class="drift-leaf d4"></span>
     </div>
 
-    <!-- Right: result -->
-    <div class="panel fade-up" style="animation-delay:.2s">
-      <p class="panel-title">🧬 Diagnosis Result</p>
+    <div class="wrap hero-grid">
+      <div class="hero-copy">
+        <p class="eyebrow reveal">Plant pathology, from a photograph</p>
+        <h1 id="hero-title" class="reveal">Read the leaf.<br /><em>Know the cause.</em></h1>
+        <p class="lede reveal">
+          Folia identifies <strong>38 diseases and healthy states</strong> across 14 crops from a single
+          leaf photo — with confidence scores, the likely cause, and treatment guidance.
+        </p>
+        <div class="hero-cta reveal">
+          <a class="btn btn-primary" href="#diagnose">
+            Diagnose a leaf
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </a>
+          <a class="btn btn-ghost" href="#model">See model performance</a>
+        </div>
 
-      <div id="demo-note" class="demo-note">
-        ⚠️ Running in demo mode — train &amp; save the model first (<code>model.save()</code> in the notebook).
+        <dl class="hero-stats reveal" aria-label="Model at a glance">
+          <div><dt>Test accuracy</dt><dd data-stat="accuracy">—</dd></div>
+          <div><dt>Conditions</dt><dd data-stat="classes">38</dd></div>
+          <div><dt>Crops</dt><dd data-stat="crops">14</dd></div>
+          <div><dt>Training images</dt><dd data-stat="images">—</dd></div>
+        </dl>
       </div>
 
-      <!-- placeholder -->
-      <div id="result-placeholder" class="hint-box">
-        <span class="hint-icon">🔬</span>
-        Upload a leaf image and click <strong>Analyse Plant</strong> to see the AI diagnosis here.
+      <!-- 3D specimen stage (decorative) -->
+      <div class="stage" id="stage" aria-hidden="true">
+        <div class="stage-3d" id="stage-3d">
+          <div class="orbit orbit-a"></div>
+          <div class="orbit orbit-b"></div>
+
+          <svg class="leaf3d leaf-back" viewBox="0 0 200 300">
+            <use href="#leaf-shape" fill="url(#g-sage)" />
+            <use href="#leaf-veins" style="stroke:var(--leaf-vein-soft)" />
+          </svg>
+
+          <svg class="leaf3d leaf-main" viewBox="0 0 200 300">
+            <use href="#leaf-shape" fill="url(#g-forest)" />
+            <use href="#leaf-veins" style="stroke:var(--leaf-vein)" />
+            <circle cx="122" cy="118" r="9" fill="#8F5530" opacity=".55" />
+            <circle cx="122" cy="118" r="4" fill="#5B3A22" opacity=".6" />
+            <circle cx="86" cy="176" r="6" fill="#8F5530" opacity=".45" />
+          </svg>
+
+          <svg class="leaf3d leaf-front" viewBox="0 0 200 300">
+            <use href="#leaf-shape" fill="url(#g-light)" />
+            <use href="#leaf-veins" style="stroke:var(--leaf-vein)" />
+          </svg>
+
+          <div class="scan" aria-hidden="true"></div>
+
+          <div class="hud hud-a">
+            <span class="hud-k">Backbone</span>
+            <span class="hud-v">MobileNetV2 · 224×224</span>
+          </div>
+          <div class="hud hud-b">
+            <span class="hud-k">Held-out test</span>
+            <span class="hud-v" data-stat="accuracy">—</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Diagnose ─────────────────────────────────────────────── -->
+  <section class="section" id="diagnose" aria-labelledby="diagnose-title">
+    <div class="wrap">
+      <header class="section-head reveal">
+        <p class="eyebrow">Diagnose</p>
+        <h2 id="diagnose-title">Upload a leaf, get a diagnosis</h2>
+        <p class="section-sub">Photograph a single leaf against a plain background, in good light. The model runs on this server — your photo isn't stored.</p>
+      </header>
+
+      <div class="diag-grid">
+        <!-- Upload -->
+        <article class="card upload-card reveal" aria-labelledby="upload-title">
+          <div class="card-head">
+            <h3 id="upload-title" class="card-title">Specimen</h3>
+            <span class="card-meta">JPG · PNG · WEBP · BMP · up to 10 MB</span>
+          </div>
+
+          <div id="drop-zone" class="drop-zone" role="button" tabindex="0"
+               aria-describedby="drop-help" aria-label="Choose a leaf image to upload">
+            <img id="preview" class="preview" alt="" />
+            <div class="scan-overlay" aria-hidden="true"><span></span></div>
+            <div class="drop-empty">
+              <div class="drop-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></svg>
+              </div>
+              <p class="drop-title">Drop a leaf photo here</p>
+              <p id="drop-help" class="drop-sub">or <span class="link-like">browse your files</span> — press Enter to open</p>
+            </div>
+            <div class="file-chip" id="file-chip" hidden>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4z"/><path d="m4 15 4-4 4 4 3-3 5 5"/></svg>
+              <span id="file-name"></span>
+            </div>
+          </div>
+          <input type="file" id="file-input" accept=".jpg,.jpeg,.png,.webp,.bmp,image/jpeg,image/png,image/webp,image/bmp" hidden />
+
+          <div class="samples" id="samples" hidden>
+            <p class="samples-label" id="samples-label">Or try a sample leaf</p>
+            <div class="samples-row" role="group" aria-labelledby="samples-label"></div>
+          </div>
+
+          <div class="upload-actions">
+            <button class="btn btn-ghost" id="clear-btn" type="button" hidden>Remove</button>
+            <button class="btn btn-primary btn-block" id="predict-btn" type="button" disabled>
+              <span class="spinner" aria-hidden="true"></span>
+              <span class="btn-label">Analyse leaf</span>
+            </button>
+          </div>
+        </article>
+
+        <!-- Result -->
+        <article class="card result-card reveal" aria-labelledby="result-title-label">
+          <div class="card-head">
+            <h3 id="result-title-label" class="card-title">Diagnosis</h3>
+            <span class="card-meta" id="result-meta">Awaiting specimen</span>
+          </div>
+
+          <div id="result-live" class="sr-only" aria-live="polite"></div>
+
+          <!-- Empty -->
+          <div class="result-empty" id="result-empty">
+            <svg class="empty-art" viewBox="0 0 120 120" aria-hidden="true">
+              <circle cx="60" cy="60" r="52" class="empty-ring" />
+              <path d="M38 84c-1-24 15-42 46-46 1 28-17 46-46 46Z" class="empty-leaf" />
+              <path d="M38 84c10-12 22-26 40-40" class="empty-vein" />
+            </svg>
+            <p>Your diagnosis will appear here — the predicted condition, how confident the model is, the likely cause and what to do next.</p>
+          </div>
+
+          <!-- Error -->
+          <div class="result-error" id="result-error" role="alert" hidden>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7.5v5.5M12 16.5v.01"/></svg>
+            <div><strong>Couldn't analyse this image</strong><p id="error-text"></p></div>
+          </div>
+
+          <!-- Result -->
+          <div class="result" id="result" hidden>
+            <div class="result-top">
+              <div class="result-name">
+                <span class="status-pill" id="status-pill"></span>
+                <p class="result-plant" id="result-plant"></p>
+                <h4 class="result-disease" id="result-disease"></h4>
+                <p class="result-cause" id="result-cause"></p>
+              </div>
+              <figure class="gauge" aria-labelledby="gauge-cap">
+                <svg viewBox="0 0 120 120" aria-hidden="true">
+                  <circle class="gauge-track" cx="60" cy="60" r="50" />
+                  <circle class="gauge-fill" id="gauge-fill" cx="60" cy="60" r="50" />
+                </svg>
+                <div class="gauge-val"><span id="gauge-num">0</span><small>%</small></div>
+                <figcaption id="gauge-cap"><span class="sr-only">Confidence: </span><span id="gauge-label">Confidence</span></figcaption>
+              </figure>
+            </div>
+
+            <div class="low-conf" id="low-conf" hidden>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 2 20h20L12 3Z"/><path d="M12 10v4M12 17v.01"/></svg>
+              <p>The model isn't sure about this one. Try a sharper photo of a single leaf on a plain background, and check the alternatives below.</p>
+            </div>
+
+            <div class="result-blocks">
+              <section class="info-block">
+                <h5>About this condition</h5>
+                <p id="result-desc"></p>
+              </section>
+              <section class="info-block">
+                <h5>Recommended action</h5>
+                <ol class="steps-list" id="result-treatment"></ol>
+              </section>
+            </div>
+
+            <section class="top5" aria-labelledby="top5-title">
+              <div class="top5-head">
+                <h5 id="top5-title">Top 5 predictions</h5>
+                <span class="hint">Model probability</span>
+              </div>
+              <ol class="bar-list" id="top5-list"></ol>
+            </section>
+
+            <p class="disclaimer">Guidance is general. For crops of value, confirm with a plant pathologist or your local agricultural extension service before treating.</p>
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Model performance ────────────────────────────────────── -->
+  <section class="section section-tint" id="model" aria-labelledby="model-title">
+    <div class="wrap">
+      <header class="section-head reveal">
+        <p class="eyebrow">Model</p>
+        <h2 id="model-title">Measured on leaves it never saw</h2>
+        <p class="section-sub">Every number below comes from <code>metrics.json</code>, written by <code>train.py</code> after evaluating on a held-out test split that played no part in training.</p>
+      </header>
+
+      <div class="model-unavailable card" id="model-unavailable" hidden>
+        <p>Model metrics aren't available yet. Run <code>python train.py</code> to train the model and generate <code>metrics.json</code>.</p>
       </div>
 
-      <!-- result -->
-      <div id="result-panel">
-        <div class="result-header">
-          <div class="result-icon" id="result-icon">🌿</div>
+      <div class="model-grid" id="model-grid">
+        <article class="card stat-hero reveal">
+          <p class="stat-label">Test accuracy</p>
+          <p class="stat-big" data-stat="accuracy">—</p>
+          <p class="stat-note" id="test-note">on held-out images</p>
+        </article>
+
+        <article class="card reveal" aria-labelledby="cmp-title">
+          <h3 class="chart-title" id="cmp-title">Accuracy vs the original baseline</h3>
+          <p class="chart-sub">Original: 2-layer CNN on grayscale (validation). Folia: MobileNetV2 on colour (test).</p>
+          <ol class="bar-list bar-list-lg" id="cmp-chart"></ol>
+        </article>
+
+        <article class="card reveal" aria-labelledby="split-title">
+          <h3 class="chart-title" id="split-title">Dataset split</h3>
+          <p class="chart-sub">PlantVillage colour images, stratified by class</p>
+          <div class="stack" id="split-chart" role="img"></div>
+          <ul class="legend" id="split-legend"></ul>
+        </article>
+      </div>
+
+      <article class="card perclass reveal" aria-labelledby="perclass-title" id="perclass-card">
+        <div class="perclass-head">
           <div>
-            <div class="result-title" id="result-title">—</div>
-            <div class="result-sub" id="result-sub">—</div>
+            <h3 class="chart-title" id="perclass-title">Accuracy by condition</h3>
+            <p class="chart-sub">Share of test images of each condition the model labelled correctly</p>
+          </div>
+          <div class="filters" role="toolbar" aria-label="Chart filters">
+            <label class="select">
+              <span class="sr-only">Crop</span>
+              <select id="crop-filter"><option value="">All crops</option></select>
+            </label>
+            <div class="seg" role="radiogroup" aria-label="Sort order">
+              <button type="button" role="radio" aria-checked="true" data-sort="asc">Lowest first</button>
+              <button type="button" role="radio" aria-checked="false" data-sort="az">A–Z</button>
+            </div>
           </div>
         </div>
-
-        <div id="severity-chip" class="chip"></div>
-
-        <div class="conf-wrap">
-          <div class="conf-label">
-            <span>Confidence</span>
-            <strong id="conf-pct">0%</strong>
+        <ol class="bar-list bar-list-dense" id="perclass-chart"></ol>
+        <div class="axis" aria-hidden="true"><span>0%</span><span>25%</span><span>50%</span><span>75%</span><span>100%</span></div>
+        <details class="table-view">
+          <summary>View as table</summary>
+          <div class="table-scroll">
+            <table>
+              <caption class="sr-only">Test accuracy by condition</caption>
+              <thead><tr><th scope="col">Crop</th><th scope="col">Condition</th><th scope="col" class="num">Accuracy</th></tr></thead>
+              <tbody id="perclass-table"></tbody>
+            </table>
           </div>
-          <div class="conf-bar"><div class="conf-fill" id="conf-fill"></div></div>
-        </div>
-
-        <div class="info-block">
-          <h4>About this condition</h4>
-          <p id="result-desc">—</p>
-        </div>
-
-        <div class="info-block">
-          <h4>💊 Treatment</h4>
-          <p id="result-treatment">—</p>
-        </div>
-
-        <div class="info-block">
-          <h4>Top 5 predictions</h4>
-          <ul class="top5-list" id="top5-list"></ul>
-        </div>
-      </div>
+        </details>
+      </article>
     </div>
-  </div>
+  </section>
 
-  <!-- How it works -->
-  <section class="how-section fade-up" style="animation-delay:.3s">
-    <h2>How it works</h2>
-    <div class="steps">
-      <div class="step">
-        <div class="step-num">1</div>
-        <h3>Upload</h3>
-        <p>Take a clear photo of an infected leaf and upload it to the platform.</p>
-      </div>
-      <div class="step">
-        <div class="step-num">2</div>
-        <h3>Analyse</h3>
-        <p>Our CNN model analyses the image across 38 disease categories in milliseconds.</p>
-      </div>
-      <div class="step">
-        <div class="step-num">3</div>
-        <h3>Treat</h3>
-        <p>Get an instant diagnosis with confidence scores and specific treatment steps.</p>
-      </div>
+  <!-- ── Crops ────────────────────────────────────────────────── -->
+  <section class="section" id="crops" aria-labelledby="crops-title">
+    <div class="wrap">
+      <header class="section-head reveal">
+        <p class="eyebrow">Coverage</p>
+        <h2 id="crops-title">14 crops, 38 conditions</h2>
+        <p class="section-sub">Folia only knows these crops. A photo of any other plant will still be matched to the closest of these 38 labels, so treat it with caution.</p>
+      </header>
+      <ul class="crop-grid" id="crop-grid"></ul>
+    </div>
+  </section>
+
+  <!-- ── Method ───────────────────────────────────────────────── -->
+  <section class="section section-tint" id="method" aria-labelledby="method-title">
+    <div class="wrap">
+      <header class="section-head reveal">
+        <p class="eyebrow">Method</p>
+        <h2 id="method-title">From photo to prescription</h2>
+      </header>
+      <ol class="pipeline">
+        <li class="reveal">
+          <span class="pipe-num">01</span>
+          <h3>Upload</h3>
+          <p>A single leaf photo is sent to the Flask backend. Nothing is saved to disk.</p>
+        </li>
+        <li class="reveal">
+          <span class="pipe-num">02</span>
+          <h3>Preprocess</h3>
+          <p>The image is converted to RGB and resized to 224×224 — exactly as in training.</p>
+        </li>
+        <li class="reveal">
+          <span class="pipe-num">03</span>
+          <h3>Classify</h3>
+          <p>A MobileNetV2 backbone, pretrained on ImageNet and fine-tuned on PlantVillage, scores all 38 classes.</p>
+        </li>
+        <li class="reveal">
+          <span class="pipe-num">04</span>
+          <h3>Advise</h3>
+          <p>The top prediction is paired with its cause, severity and treatment, alongside the next four candidates.</p>
+        </li>
+      </ol>
+
+      <aside class="card limits reveal" aria-labelledby="limits-title">
+        <h3 id="limits-title">Know the limits</h3>
+        <ul>
+          <li>Trained on lab photos of single leaves on plain backgrounds. Expect lower accuracy on field photos with clutter, shadows or several leaves.</li>
+          <li>Some conditions are harder than others — see <a href="#perclass-card">accuracy by condition</a>.</li>
+          <li>A decision aid, not a replacement for an expert diagnosis.</li>
+        </ul>
+      </aside>
     </div>
   </section>
 </main>
 
-<footer>
-  PlantMD · Powered by TensorFlow CNN · PlantVillage Dataset · Built with ❤️ for farmers
+<footer class="footer">
+  <div class="wrap footer-inner">
+    <div class="brand brand-foot">
+      <img src="/static/img/folia-mark.svg" alt="" width="28" height="28" />
+      <span class="brand-word">Folia</span>
+    </div>
+    <p>Built with TensorFlow &amp; Flask on the <a href="https://www.kaggle.com/datasets/abdallahalidev/plantvillage-dataset" rel="noopener">PlantVillage dataset</a>.</p>
+    <p><a href="https://github.com/saharsh-lab/Plant-disease-cnn" rel="noopener">Source on GitHub</a></p>
+  </div>
 </footer>
 
-<script>
-  const dropZone   = document.getElementById('drop-zone');
-  const fileInput  = document.getElementById('file-input');
-  const preview    = document.getElementById('preview');
-  const predictBtn = document.getElementById('predict-btn');
-  const clearBtn   = document.getElementById('clear-btn');
-  const spinner    = document.getElementById('spinner');
-  const btnText    = document.getElementById('btn-text');
+<div class="tooltip" id="tooltip" aria-hidden="true"></div>
 
-  let selectedFile = null;
+<!-- Shared leaf geometry for the 3D stage -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <path id="leaf-shape" d="M100 292 C 98 262 92 250 72 228 C 26 182 14 120 40 70 C 58 36 82 16 100 6 C 118 16 142 36 160 70 C 186 120 174 182 128 228 C 108 250 102 262 100 292 Z" />
+    <g id="leaf-veins" fill="none" stroke-width="2.2" stroke-linecap="round">
+      <path d="M100 286 C 100 200 100 110 100 14" stroke-width="3.2" />
+      <path d="M100 230 C 82 214 66 204 50 200 M100 230 C 118 214 134 204 150 200" />
+      <path d="M100 184 C 80 168 62 160 40 156 M100 184 C 120 168 138 160 160 156" />
+      <path d="M100 138 C 82 122 66 114 46 110 M100 138 C 118 122 134 114 154 110" />
+      <path d="M100 94 C 86 80 74 72 60 68 M100 94 C 114 80 126 72 140 68" />
+      <path d="M100 56 C 92 46 84 40 76 36 M100 56 C 108 46 116 40 124 36" />
+    </g>
+    <linearGradient id="g-forest" x1="0" y1="1" x2="1" y2="0">
+      <stop offset="0" style="stop-color:var(--leaf-a1)" />
+      <stop offset=".55" style="stop-color:var(--leaf-a2)" />
+      <stop offset="1" style="stop-color:var(--leaf-a3)" />
+    </linearGradient>
+    <linearGradient id="g-sage" x1="0" y1="1" x2="1" y2="0">
+      <stop offset="0" style="stop-color:var(--leaf-b1)" />
+      <stop offset="1" style="stop-color:var(--leaf-b2)" />
+    </linearGradient>
+    <linearGradient id="g-light" x1="0" y1="1" x2="1" y2="0">
+      <stop offset="0" style="stop-color:var(--leaf-c1)" />
+      <stop offset="1" style="stop-color:var(--leaf-c2)" />
+    </linearGradient>
+  </defs>
+</svg>
 
-  /* ── Drag & drop ─────────────────────────────────────────── */
-  dropZone.addEventListener('click', () => fileInput.click());
-
-  dropZone.addEventListener('dragover', e => {
-    e.preventDefault(); dropZone.classList.add('drag-over');
-  });
-  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
-  dropZone.addEventListener('drop', e => {
-    e.preventDefault(); dropZone.classList.remove('drag-over');
-    const file = e.dataTransfer.files[0];
-    if (file) setFile(file);
-  });
-
-  fileInput.addEventListener('change', () => {
-    if (fileInput.files[0]) setFile(fileInput.files[0]);
-  });
-
-  function setFile(file) {
-    selectedFile = file;
-    document.getElementById('file-name').textContent = file.name;
-    const reader = new FileReader();
-    reader.onload = e => {
-      preview.src = e.target.result;
-      dropZone.classList.add('has-image');
-      predictBtn.disabled = false;
-      clearBtn.style.display = 'flex';
-    };
-    reader.readAsDataURL(file);
-    // Reset results
-    document.getElementById('result-placeholder').style.display = 'block';
-    document.getElementById('result-panel').classList.remove('visible');
-    document.getElementById('demo-note').classList.remove('visible');
-  }
-
-  function clearImage() {
-    selectedFile = null;
-    preview.src = '';
-    dropZone.classList.remove('has-image');
-    predictBtn.disabled = true;
-    clearBtn.style.display = 'none';
-    fileInput.value = '';
-    document.getElementById('result-placeholder').style.display = 'block';
-    document.getElementById('result-panel').classList.remove('visible');
-    document.getElementById('demo-note').classList.remove('visible');
-  }
-
-  /* ── Predict ─────────────────────────────────────────────── */
-  async function predict() {
-    if (!selectedFile) return;
-
-    // Loading state
-    predictBtn.disabled = true;
-    spinner.style.display = 'block';
-    btnText.textContent = 'Analysing…';
-
-    const formData = new FormData();
-    formData.append('image', selectedFile);
-
-    try {
-      const res = await fetch('/predict', { method: 'POST', body: formData });
-      if (!res.ok) throw new Error(await res.text());
-      const data = await res.json();
-      renderResult(data);
-    } catch (err) {
-      alert('Error: ' + err.message);
-    } finally {
-      predictBtn.disabled = false;
-      spinner.style.display = 'none';
-      btnText.textContent = '🔍 Analyse Plant';
-    }
-  }
-
-  /* ── Render result ───────────────────────────────────────── */
-  function renderResult(d) {
-    // Demo note
-    if (d.demo_mode) document.getElementById('demo-note').classList.add('visible');
-
-    // Icon & title
-    const iconEl = document.getElementById('result-icon');
-    const isHealthy = d.status === 'healthy';
-
-    if (isHealthy) {
-      iconEl.textContent = '✅';
-      iconEl.className = 'result-icon icon-healthy';
-    } else if (d.severity === 'critical') {
-      iconEl.textContent = '🚨';
-      iconEl.className = 'result-icon icon-critical';
-    } else {
-      iconEl.textContent = '⚠️';
-      iconEl.className = 'result-icon icon-diseased';
-    }
-
-    document.getElementById('result-title').textContent = d.plant || d.predicted_class;
-    document.getElementById('result-sub').textContent   = d.disease || '';
-
-    // Severity chip
-    const chipEl = document.getElementById('severity-chip');
-    const chipMap = {
-      none:     ['chip-none',     '🟢 Healthy'],
-      moderate: ['chip-moderate', '🟡 Moderate'],
-      high:     ['chip-high',     '🟠 High Risk'],
-      critical: ['chip-critical', '🔴 Critical'],
-    };
-    const [cls, label] = chipMap[d.severity] || chipMap['moderate'];
-    chipEl.className = 'chip ' + cls;
-    chipEl.textContent = label;
-
-    // Confidence bar
-    const pct = Math.round((d.confidence || 0) * 100);
-    document.getElementById('conf-pct').textContent = pct + '%';
-    setTimeout(() => {
-      document.getElementById('conf-fill').style.width = pct + '%';
-    }, 50);
-
-    // Description & treatment
-    document.getElementById('result-desc').textContent      = d.description  || '—';
-    document.getElementById('result-treatment').textContent = d.treatment     || '—';
-
-    // Top-5
-    const list = document.getElementById('top5-list');
-    list.innerHTML = '';
-    const top5 = d.top5 || [{ class: d.predicted_class, confidence: d.confidence }];
-    top5.forEach((item, i) => {
-      const p = Math.round(item.confidence * 100);
-      const parts = (item.class || '').split('___');
-      const label = parts.length > 1
-        ? `${parts[0]} – ${parts[1].replace(/_/g,' ')}`
-        : item.class;
-      list.innerHTML += `
-        <li class="top5-item">
-          <span style="color:var(--muted);width:16px">${i+1}</span>
-          <span class="top5-name" title="${label}">${label}</span>
-          <div class="top5-bar-wrap">
-            <div class="top5-bar" style="width:${p}%"></div>
-          </div>
-          <span class="top5-pct">${p}%</span>
-        </li>`;
-    });
-
-    // Show result
-    document.getElementById('result-placeholder').style.display = 'none';
-    document.getElementById('result-panel').classList.add('visible');
-  }
-</script>
+<script src="/static/js/folia.js" defer></script>
 </body>
 </html>
